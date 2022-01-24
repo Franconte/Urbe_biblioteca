@@ -1,0 +1,75 @@
+stages:
+  - test
+  - artifactory
+  - build
+  - package
+  - javadoc
+
+image: maven:3.6-jdk-11
+
+variables:
+  MAVEN_CLI_OPTS: "-s .m2/settings.xml --batch-mode"
+  MAVEN_OPTS: "-Dmaven.repo.local=.m2/repository"
+  SECURITY_CONSTANTS_PATH: "/web/src/main/java/edu/urbe/library/security/"
+  SECURITY_CONSTANTS_FILE: "SecurityConstants.java"
+  DOCKER_HOST: tcp://docker:2375
+  DOCKER_TLS_CERTDIR: ""
+
+cache:
+  paths:
+    - .m2/repository/
+    - target/
+
+test:
+  stage: test
+  script:
+   - echo "Running tests"
+   
+artifactory:
+  stage: artifactory
+  script:
+   - cat $ARTIFACTORY > .m2/settings.xml
+   - mvn $MAVEN_CLI_OPTS compile
+
+build:
+  stage: build
+  script:
+   - cat $ARTIFACTORY > .m2/settings.xml
+   - cd $CI_PROJECT_DIR$SECURITY_CONSTANTS_PATH
+   - sed -i s/@jwt_secret@/$JWT_SECRET/g $SECURITY_CONSTANTS_FILE
+   - cd $CI_PROJECT_DIR
+   - mvn $MAVEN_CLI_OPTS package -Dmaven.test.skip=true -Dspring.profiles.active=prod -Ddb_url="$DB_URL" -Ddb_username="$DB_USERNAME" -Ddb_password="$DB_PASSWORD"
+  artifacts:
+    paths:
+      - web/target/*.jar
+    expire_in: 1 week
+  only:
+   - master
+
+docker-build:
+  image: docker:19.03.5
+  services:
+    - docker:19.03.5-dind
+  stage: package
+  script:
+    - docker build -t $GITLAB_SERVER/microservicios/library .
+    - docker login -u $GITLAB_USER_API -p $GITLAB_TOKEN $GITLAB_SERVER
+    - docker push $GITLAB_SERVER/microservicios/library
+  only:
+    - master
+    
+javadoc:
+  stage: javadoc
+  script:
+   - eval $(ssh-agent -s)
+   - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add - > /dev/null
+   - mkdir -p ~/.ssh
+   - chmod 700 ~/.ssh
+   - cd $CI_PROJECT_DIR
+   - mvn javadoc:javadoc
+   - cd web/target/site/apidocs
+   - ssh -o StrictHostKeyChecking=no -tt root@$SERVER "rm -rf /usr/share/nginx/html/readthedocs/biblioteca/javadocs/*.*"
+   - scp -r -o StrictHostKeyChecking=no . root@$SERVER:/usr/share/nginx/html/readthedocs/biblioteca/javadocs
+   - ssh -o StrictHostKeyChecking=no -tt root@$SERVER "ls -la /usr/share/nginx/html/readthedocs/biblioteca/javadocs"
+  only:
+    - master

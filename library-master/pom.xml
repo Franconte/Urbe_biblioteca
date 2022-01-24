@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>edu.urbe</groupId>
+    <artifactId>library-multi-module</artifactId>
+    <version>0.0.2-RELEASE</version>
+    <packaging>pom</packaging>
+
+    <modules>
+        <module>library-search</module>
+        <module>web</module>
+    </modules>
+
+    <properties>
+        <java.version>1.8</java.version>
+        <maven.deploy.skip>true</maven.deploy.skip>
+        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.target>11</maven.compiler.target>
+    </properties>
+    
+    <scm>
+        <connection>scm:git:git@gitlab.urbe.edu:microservicios/library.git</connection>
+        <developerConnection>scm:git:git@gitlab.urbe.edu:microservicios/library.git</developerConnection>
+        <url>https://gitlab.urbe.edu/microservicios/library</url>
+      <tag>v0.0.2-RELEASE</tag>
+  </scm>
+
+    <distributionManagement>
+        <snapshotRepository>
+            <id>snapshots</id>
+            <name>URBE Artifactory Server-snapshots</name>
+            <url>https://artifactory.urbe.edu/artifactory/libs-snapshot</url>
+        </snapshotRepository>
+        <repository>
+            <id>central</id>
+            <name>URBE Artifactory Server-releases</name>
+            <url>https://artifactory.urbe.edu/artifactory/libs-release</url>
+        </repository>
+    </distributionManagement>
+
+</project>
